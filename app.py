@@ -164,7 +164,7 @@ def get_recent_water_levels():
         """
         SELECT ID, Date, Parameter, Value
         FROM water_data
-        WHERE Parameter IN ('3', '46') AND Date >= ?
+        WHERE Parameter IN ('3', '6', '46', '47') AND Date >= ?
         ORDER BY Date ASC
         """,
         (seven_days_ago,)

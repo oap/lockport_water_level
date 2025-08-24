@@ -86,29 +86,65 @@
                             station === stationId && parameter === '3'
                         );
                         
-                        if (unitValueData.length > 0 || dailyMeanData.length > 0) {
-                            console.log(`Station ${stationId}: Found ${unitValueData.length} unit values and ${dailyMeanData.length} daily mean values`);
+                        // For station 05OJ005, also extract discharge data
+                        let dischargeUnitData = [];
+                        let dischargeDailyData = [];
+                        if (stationId === '05OJ005') {
+                            dischargeUnitData = recentWaterLevels.filter(([station, date, parameter, value]) => 
+                                station === stationId && parameter === '47'
+                            );
+                            dischargeDailyData = recentWaterLevels.filter(([station, date, parameter, value]) => 
+                                station === stationId && parameter === '6'
+                            );
+                        }
+                        
+                        if (unitValueData.length > 0 || dailyMeanData.length > 0 || dischargeUnitData.length > 0) {
+                            console.log(`Station ${stationId}: Found ${unitValueData.length} water level unit values, ${dailyMeanData.length} water level daily means, ${dischargeUnitData.length} discharge unit values, ${dischargeDailyData.length} discharge daily means`);
                             
-                            // Process unit values (sample every 10th point)
+                            // Process water level unit values (sample every 10th point)
                             const sampledUnitData = unitValueData.filter((_, index) => index % 10 === 0);
                             const unitDataPoints = sampledUnitData.map(([, date, , value]) => {
                                 const utcDate = new Date(date);
                                 return {
-                                    x: utcDate.getTime(), // Use timestamp for proper chronological ordering
-                                    y: value
+                                    x: utcDate.getTime(),
+                                    y: parseFloat(value)
                                 };
                             });
                             
-                            // Process daily mean values (position at mid-day for better representation)
+                            // Process water level daily mean values (position at mid-day)
                             const dailyDataPoints = dailyMeanData.map(([, date, , value]) => {
                                 const utcDate = new Date(date);
-                                // Set time to 12:00 (noon) for daily mean values since they represent the whole day
                                 utcDate.setUTCHours(12, 0, 0, 0);
                                 return {
-                                    x: utcDate.getTime(), // Use timestamp for proper chronological ordering
-                                    y: value
+                                    x: utcDate.getTime(),
+                                    y: parseFloat(value)
                                 };
                             });
+                            
+                            // Process discharge data for station 05OJ005
+                            let dischargeUnitDataPoints = [];
+                            let dischargeDailyDataPoints = [];
+                            if (stationId === '05OJ005') {
+                                // Process discharge unit values (sample every 10th point)
+                                const sampledDischargeData = dischargeUnitData.filter((_, index) => index % 10 === 0);
+                                dischargeUnitDataPoints = sampledDischargeData.map(([, date, , value]) => {
+                                    const utcDate = new Date(date);
+                                    return {
+                                        x: utcDate.getTime(),
+                                        y: parseFloat(value)
+                                    };
+                                });
+                                
+                                // Process discharge daily mean values
+                                dischargeDailyDataPoints = dischargeDailyData.map(([, date, , value]) => {
+                                    const utcDate = new Date(date);
+                                    utcDate.setUTCHours(12, 0, 0, 0);
+                                    return {
+                                        x: utcDate.getTime(),
+                                        y: parseFloat(value)
+                                    };
+                                });
+                            }
                             
                             // Create container for this station
                             const stationDiv = document.createElement('div');
@@ -116,7 +152,11 @@
                             
                             // Add title for the station
                             const title = document.createElement('h3');
-                            title.textContent = `Water Level - Station ${stationId}`;
+                            if (stationId === '05OJ005') {
+                                title.textContent = `Water Level & Discharge - Station ${stationId}`;
+                            } else {
+                                title.textContent = `Water Level - Station ${stationId}`;
+                            }
                             title.style.marginBottom = '10px';
                             stationDiv.appendChild(title);
                             
@@ -130,35 +170,117 @@
 
                             const ctx = canvas.getContext('2d');
                             
+                            // Prepare datasets based on station
+                            let datasets = [
+                                {
+                                    label: 'Water Level Unit Values (5-min intervals)',
+                                    data: unitDataPoints,
+                                    borderColor: 'green',
+                                    backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                                    fill: false,
+                                    pointRadius: 1,
+                                    pointHoverRadius: 3,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: 'Water Level Daily Mean Values',
+                                    data: dailyDataPoints,
+                                    borderColor: 'blue',
+                                    backgroundColor: 'rgba(0, 0, 255, 0.3)',
+                                    fill: false,
+                                    pointRadius: 8,
+                                    pointHoverRadius: 10,
+                                    borderWidth: 0,
+                                    pointStyle: 'circle',
+                                    pointBorderWidth: 3,
+                                    pointBorderColor: 'blue',
+                                    showLine: false,
+                                    tension: 0,
+                                    yAxisID: 'y'
+                                }
+                            ];
+                            
+                            // Add discharge datasets for station 05OJ005
+                            if (stationId === '05OJ005' && (dischargeUnitDataPoints.length > 0 || dischargeDailyDataPoints.length > 0)) {
+                                if (dischargeUnitDataPoints.length > 0) {
+                                    datasets.push({
+                                        label: 'Discharge Unit Values (5-min intervals)',
+                                        data: dischargeUnitDataPoints,
+                                        borderColor: 'orange',
+                                        backgroundColor: 'rgba(255, 165, 0, 0.1)',
+                                        fill: false,
+                                        pointRadius: 1,
+                                        pointHoverRadius: 3,
+                                        yAxisID: 'y1'
+                                    });
+                                }
+                                
+                                if (dischargeDailyDataPoints.length > 0) {
+                                    datasets.push({
+                                        label: 'Discharge Daily Mean Values',
+                                        data: dischargeDailyDataPoints,
+                                        borderColor: 'red',
+                                        backgroundColor: 'rgba(255, 0, 0, 0.3)',
+                                        fill: false,
+                                        pointRadius: 8,
+                                        pointHoverRadius: 10,
+                                        borderWidth: 0,
+                                        pointStyle: 'circle',
+                                        pointBorderWidth: 3,
+                                        pointBorderColor: 'red',
+                                        showLine: false,
+                                        tension: 0,
+                                        yAxisID: 'y1'
+                                    });
+                                }
+                            }
+                            
+                            // Prepare scales configuration
+                            let scalesConfig = {
+                                y: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'left',
+                                    title: {
+                                        display: true,
+                                        text: 'Water Level (m)'
+                                    }
+                                },
+                                x: {
+                                    type: 'time',
+                                    time: {
+                                        displayFormats: {
+                                            hour: 'MM/dd HH:mm',
+                                            day: 'MM/dd'
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Date & Time (Local)'
+                                    }
+                                }
+                            };
+                            
+                            // Add secondary y-axis for discharge data on station 05OJ005
+                            if (stationId === '05OJ005' && (dischargeUnitDataPoints.length > 0 || dischargeDailyDataPoints.length > 0)) {
+                                scalesConfig.y1 = {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'right',
+                                    title: {
+                                        display: true,
+                                        text: 'Discharge (m³/s)'
+                                    },
+                                    grid: {
+                                        drawOnChartArea: false, // Only want the grid lines for one axis to show up
+                                    }
+                                };
+                            }
+                            
                             new Chart(ctx, {
                                 type: 'line',
                                 data: {
-                                    datasets: [
-                                        {
-                                            label: 'Unit Values (5-min intervals)',
-                                            data: unitDataPoints,
-                                            borderColor: 'green',
-                                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
-                                            fill: false,
-                                            pointRadius: 1,
-                                            pointHoverRadius: 3
-                                        },
-                                        {
-                                            label: 'Daily Mean Values (positioned at noon)',
-                                            data: dailyDataPoints,
-                                            borderColor: 'blue',
-                                            backgroundColor: 'rgba(0, 0, 255, 0.3)',
-                                            fill: false,
-                                            pointRadius: 8,
-                                            pointHoverRadius: 10,
-                                            borderWidth: 0,
-                                            pointStyle: 'circle',
-                                            pointBorderWidth: 3,
-                                            pointBorderColor: 'blue',
-                                            showLine: false,
-                                            tension: 0
-                                        }
-                                    ]
+                                    datasets: datasets
                                 },
                                 options: {
                                     responsive: true,
@@ -172,27 +294,7 @@
                                             position: 'top'
                                         }
                                     },
-                                    scales: {
-                                        y: {
-                                            title: {
-                                                display: true,
-                                                text: 'Water Level (m)'
-                                            }
-                                        },
-                                        x: {
-                                            type: 'time',
-                                            time: {
-                                                displayFormats: {
-                                                    hour: 'MM/dd HH:mm',
-                                                    day: 'MM/dd'
-                                                }
-                                            },
-                                            title: {
-                                                display: true,
-                                                text: 'Date & Time (Local)'
-                                            }
-                                        }
-                                    }
+                                    scales: scalesConfig
                                 }
                             });
                             
