@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Level Near Lockport</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+</head>
+<body>
+    <h1>Welcome to the Water Level Near Lockport Dashboard</h1>
+    <nav>
+        <ul>
+            <li><a href="/api/update" onclick="updateData(event)">Update Data</a></li>
+        </ul>
+    </nav>
+    <h2>Data Update Status</h2>
+    <p>Earliest Date: <span id="min-date">{{ min_date }}</span></p>
+    <p>Latest Date: <span id="max-date">{{ max_date }}</span></p>
+    <script>
+        // Convert UTC date strings to local time and display them
+        function formatLocalDate(utcString) {
+            if (!utcString) return '';
+            const date = new Date(utcString);
+            if (isNaN(date)) return utcString;
+            return date.toLocaleString();
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const minDateElem = document.getElementById('min-date');
+            const maxDateElem = document.getElementById('max-date');
+            if (minDateElem) minDateElem.textContent = formatLocalDate(minDateElem.textContent);
+            if (maxDateElem) maxDateElem.textContent = formatLocalDate(maxDateElem.textContent);
+        });
+    </script>
+
+    <h2>Water Level Plots</h2>
+    <div id="chartContainer">Loading charts...</div>
+    <div id="debug">Debug: Page loaded at {{ min_date }} to {{ max_date }}</div>
+
+    <script>
+        // Wait for page to fully load
+        window.addEventListener('load', function() {
+            try {
+                console.log('Page loaded, script starting...');
+                
+                const recentWaterLevels = JSON.parse('{{ recent_water_levels|tojson }}');
+                console.log('Recent Water Levels received:', recentWaterLevels.length, 'records');
+                console.log('Sample data:', recentWaterLevels.slice(0, 3));
+
+                // Check if Chart.js is loaded
+                if (typeof Chart === 'undefined') {
+                    console.error('Chart.js is not loaded!');
+                    document.getElementById('chartContainer').innerHTML = '<p style="color: red;">Chart.js failed to load</p>';
+                    return;
+                }
+                console.log('Chart.js is available');
+
+                // Get chart container
+                const chartContainer = document.getElementById('chartContainer');
+                if (!chartContainer) {
+                    console.error('Chart container not found!');
+                    return;
+                }
+                
+                chartContainer.innerHTML = '<p>Creating chart...</p>';
+
+                // Create a simple test chart with real data
+                if (recentWaterLevels.length > 0) {
+                    // Get all unique stations
+                    const stations = [...new Set(recentWaterLevels.map(([station]) => station))].sort();
+                    console.log('Found stations:', stations);
+                    
+                    chartContainer.innerHTML = ''; // Clear loading message
+                    
+                    // Create charts for each station
+                    stations.forEach((stationId, index) => {
+                        console.log(`Processing station ${stationId}`);
+                        
+                        // Extract unit values (parameter 46) for this station
+                        const unitValueData = recentWaterLevels.filter(([station, date, parameter, value]) => 
+                            station === stationId && parameter === '46'
+                        );
+                        
+                        // Extract daily mean values (parameter 3) for this station
+                        const dailyMeanData = recentWaterLevels.filter(([station, date, parameter, value]) => 
+                            station === stationId && parameter === '3'
+                        );
+                        
+                        if (unitValueData.length > 0 || dailyMeanData.length > 0) {
+                            console.log(`Station ${stationId}: Found ${unitValueData.length} unit values and ${dailyMeanData.length} daily mean values`);
+                            
+                            // Process unit values (sample every 10th point)
+                            const sampledUnitData = unitValueData.filter((_, index) => index % 10 === 0);
+                            const unitDataPoints = sampledUnitData.map(([, date, , value]) => {
+                                const utcDate = new Date(date);
+                                return {
+                                    x: utcDate.getTime(), // Use timestamp for proper chronological ordering
+                                    y: value
+                                };
+                            });
+                            
+                            // Process daily mean values (position at mid-day for better representation)
+                            const dailyDataPoints = dailyMeanData.map(([, date, , value]) => {
+                                const utcDate = new Date(date);
+                                // Set time to 12:00 (noon) for daily mean values since they represent the whole day
+                                utcDate.setUTCHours(12, 0, 0, 0);
+                                return {
+                                    x: utcDate.getTime(), // Use timestamp for proper chronological ordering
+                                    y: value
+                                };
+                            });
+                            
+                            // Create container for this station
+                            const stationDiv = document.createElement('div');
+                            stationDiv.style.marginBottom = '40px';
+                            
+                            // Add title for the station
+                            const title = document.createElement('h3');
+                            title.textContent = `Water Level - Station ${stationId}`;
+                            title.style.marginBottom = '10px';
+                            stationDiv.appendChild(title);
+                            
+                            const canvas = document.createElement('canvas');
+                            canvas.id = `water-chart-${stationId}`;
+                            canvas.width = 800;
+                            canvas.height = 400;
+                            stationDiv.appendChild(canvas);
+                            
+                            chartContainer.appendChild(stationDiv);
+
+                            const ctx = canvas.getContext('2d');
+                            
+                            new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                    datasets: [
+                                        {
+                                            label: 'Unit Values (5-min intervals)',
+                                            data: unitDataPoints,
+                                            borderColor: 'green',
+                                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                                            fill: false,
+                                            pointRadius: 1,
+                                            pointHoverRadius: 3
+                                        },
+                                        {
+                                            label: 'Daily Mean Values (positioned at noon)',
+                                            data: dailyDataPoints,
+                                            borderColor: 'blue',
+                                            backgroundColor: 'rgba(0, 0, 255, 0.3)',
+                                            fill: false,
+                                            pointRadius: 8,
+                                            pointHoverRadius: 10,
+                                            borderWidth: 0,
+                                            pointStyle: 'circle',
+                                            pointBorderWidth: 3,
+                                            pointBorderColor: 'blue',
+                                            showLine: false,
+                                            tension: 0
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: {
+                                        title: {
+                                            display: true,
+                                            text: `Station ${stationId} (Last 7 Days)`
+                                        },
+                                        legend: {
+                                            display: true,
+                                            position: 'top'
+                                        }
+                                    },
+                                    scales: {
+                                        y: {
+                                            title: {
+                                                display: true,
+                                                text: 'Water Level (m)'
+                                            }
+                                        },
+                                        x: {
+                                            type: 'time',
+                                            time: {
+                                                displayFormats: {
+                                                    hour: 'MM/dd HH:mm',
+                                                    day: 'MM/dd'
+                                                }
+                                            },
+                                            title: {
+                                                display: true,
+                                                text: 'Date & Time (Local)'
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            console.log(`Chart created successfully for station ${stationId}!`);
+                        } else {
+                            console.log(`No data found for station ${stationId}`);
+                        }
+                    });
+                    
+                    if (chartContainer.children.length === 0) {
+                        chartContainer.innerHTML = '<p style="color: orange;">No data found for any stations</p>';
+                    }
+                } else {
+                    chartContainer.innerHTML = '<p style="color: red;">No data received from server</p>';
+                }
+                
+            } catch (error) {
+                console.error('Error in script:', error);
+                document.getElementById('chartContainer').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+        });
+
+        function updateData(event) {
+            event.preventDefault();
+            fetch('/api/update', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => alert(data.message))
+                .catch(error => alert('Error updating data: ' + error));
+        }
+    </script>
+</body>
+</html>

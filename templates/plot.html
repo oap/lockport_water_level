@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Water Data Plot</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+.plot-container { display: flex; justify-content: center; gap: 30px; }
+.plot-box { width: 48%; }
+.plot-box iframe { width: 100% !important; min-height: 500px; }
+form { text-align: center; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align:center;">Compare Water Data (Side by Side)</h2>
+    <a href="/table">Table</a>
+    <form method="get">
+        <label>Start Date:
+            <input type="text" id="plot_start_date" name="start_date" value="{{ start_date }}" autocomplete="off">
+        </label>
+        <label>End Date:
+            <input type="text" id="plot_end_date" name="end_date" value="{{ end_date }}" autocomplete="off">
+        </label>
+        <br><br>
+        <b>Left Plot:</b>
+        <label>Parameters:
+            <select name="left_params" multiple size="4">
+                {% for code, name in parameters.items() %}
+                <option value="{{ code }}" {% if code in left_params %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Stations:
+            <select name="left_stations" multiple size="4">
+                {% for sid in station_ids %}
+                <option value="{{ sid }}" {% if sid in left_stations %}selected{% endif %}>{{ sid }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <br><br>
+        <b>Right Plot:</b>
+        <label>Parameters:
+            <select name="right_params" multiple size="4">
+                {% for code, name in parameters.items() %}
+                <option value="{{ code }}" {% if code in right_params %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Stations:
+            <select name="right_stations" multiple size="4">
+                {% for sid in station_ids %}
+                <option value="{{ sid }}" {% if sid in right_stations %}selected{% endif %}>{{ sid }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <br><br>
+        <button type="submit">Plot</button>
+    </form>
+    <div class="plot-container">
+        <div class="plot-box">{{ left_plot|safe }}</div>
+        <div class="plot-box">{{ right_plot|safe }}</div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr("#plot_start_date", {enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true});
+        flatpickr("#plot_end_date", {enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true});
+    });
+    </script>
+</body>
+</html>

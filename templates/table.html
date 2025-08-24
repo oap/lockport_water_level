@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Water Data</title>
+    <style>
+        table { border-collapse: collapse; width: 80%; margin: 20px auto; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background: #f2f2f2; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+    <h2 style="text-align:center;">Water Data Table</h2>
+    <a href="/">Plot</a>
+    <form method="get" style="text-align:center; margin-bottom: 20px;">
+        <label>Start Date:
+            <input type="text" id="start_date" name="start_date" value="{{ start_date|default('') }}" autocomplete="off">
+        </label>
+        <label>End Date:
+            <input type="text" id="end_date" name="end_date" value="{{ end_date|default('') }}" autocomplete="off">
+        </label>
+        <button type="submit">Filter</button>
+    </form>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Parameter</th>
+            <th>Value</th>
+        </tr>
+        {% for row in rows %}
+        <tr>
+            <td>{{ row[0] }}</td>
+            <td>{{ row[1] }}</td>
+            <td>{{ row[2] }}</td>
+            <td>{{ row[3] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <script>
+        flatpickr("#start_date", {enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true});
+        flatpickr("#end_date", {enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true});
+    </script>
+</body>
+</html>
