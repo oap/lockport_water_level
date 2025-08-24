@@ -25,23 +25,61 @@ lockport/
 ├── app.py                 # Main Flask application
 ├── fetch_and_store.py     # Data fetching and storage utilities
 ├── requirements.txt       # Python dependencies
-├── real_time_data.db     # SQLite database (created automatically)
-├── real_time_data.csv    # CSV data export (optional)
+├── Dockerfile            # Docker container configuration
+├── docker-compose.yml    # Docker Compose setup
+├── .dockerignore         # Docker build exclusions
+├── deploy.sh             # Automated deployment script
+├── data/                 # Database storage directory
+│   └── real_time_data.db # SQLite database (created automatically)
 ├── templates/
 │   ├── index.html        # Main dashboard template
 │   ├── plot.html         # Chart-specific template
 │   └── table.html        # Table view template
-└── venv/                 # Virtual environment (create with setup)
+└── venv/                 # Virtual environment (for local development)
 ```
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- **For Docker deployment (Recommended)**: Docker and Docker Compose
+- **For local development**: Python 3.8 or higher
 - Internet connection (for fetching water level data)
 
-### Installation
+### Option 1: Docker Deployment (Recommended)
+
+The easiest way to run the application is using Docker:
+
+1. **Clone or download the project**
+   ```bash
+   cd /path/to/your/projects
+   # Copy the project files to your desired location
+   ```
+
+2. **Run the deployment script**
+   ```bash
+   chmod +x deploy.sh
+   ./deploy.sh
+   ```
+
+3. **Access the dashboard**
+   Open your web browser and go to: `http://localhost`
+
+### Option 2: Manual Docker Setup
+
+If you prefer manual control:
+
+1. **Build and run with Docker Compose**
+   ```bash
+   docker-compose up --build -d
+   ```
+
+2. **Access the dashboard**
+   Open your web browser and go to: `http://localhost`
+
+### Option 3: Local Development Setup
+
+### Option 3: Local Development Setup
 
 1. **Clone or download the project**
    ```bash
@@ -74,7 +112,35 @@ lockport/
    ```
 
 6. **Access the dashboard**
-   Open your web browser and go to: `http://localhost:8001`
+   Open your web browser and go to: `http://localhost:80`
+
+## 🐳 Docker Management
+
+### Common Docker Commands
+
+```bash
+# View logs
+docker-compose logs -f
+
+# Stop the application
+docker-compose down
+
+# Restart the application
+docker-compose restart
+
+# Rebuild and restart
+docker-compose up --build -d
+
+# Check container status
+docker-compose ps
+```
+
+### Data Persistence
+
+The Docker setup includes a volume mount for the `data/` directory, ensuring that:
+- Database files persist between container restarts
+- Historical data is preserved during updates
+- Backup and restore operations are simplified
 
 ## 📡 Data Sources
 
@@ -146,9 +212,10 @@ PARAMETERS = ['3', '6', '46', '47']  # 3=daily mean, 46=unit values
 ```
 
 ### Server Settings
-To run on a different port or host, modify the last line in `app.py`:
+**Docker Deployment**: Runs on port 80 (standard HTTP port)
+**Local Development**: To run on a different port, modify the last line in `app.py`:
 ```python
-app.run(debug=True, host='0.0.0.0', port=8001)
+app.run(debug=False, host='0.0.0.0', port=80)
 ```
 
 ## 🔍 API Endpoints

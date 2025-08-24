@@ -14,7 +14,7 @@ from io import StringIO
 import requests
 
 def update_data():
-    DB_FILE = 'real_time_data.db'
+    DB_FILE = 'data/real_time_data.db'
     TABLE_NAME = 'water_data'
     BASE_URL = 'https://wateroffice.ec.gc.ca/services/real_time_data/csv/inline'
     STATIONS = ['05OJ005', '05OJ021', '05OJ024']
@@ -114,7 +114,7 @@ def api_update():
 @app.route('/api/update_status')
 def api_update_status():
     return get_update_status()
-DB_FILE = 'real_time_data.db'
+DB_FILE = 'data/real_time_data.db'
 
 def get_data(station=None, parameter=None):
     conn = sqlite3.connect(DB_FILE)
@@ -180,4 +180,4 @@ def root():
     return render_template('index.html', min_date=min_date, max_date=max_date, recent_water_levels=recent_water_levels)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8001)
+    app.run(debug=False, host='0.0.0.0', port=80)

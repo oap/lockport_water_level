@@ -1,0 +1,42 @@
+# Virtual environment
+venv/
+.env
+
+# Development files
+docker-compose.dev.yml
+test-docker-config.sh
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+
+# Test files
+test_*.py
+*_test.py
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
